@@ -16,5 +16,4 @@ Co-author:
 - 01 x 5-6v/(at least) 2A battery
 - Body of robot(Frame, gripper, base ... )
 # 🦾 Working Principles
-- This will work like an inverted pendulum. If the body of bot move forward,   
-the wheels must run forward to maintain the balance - otherwise, it will fall down.
+
