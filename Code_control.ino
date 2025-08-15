@@ -1,130 +1,133 @@
 #include <Servo.h>
 
-Servo servo1;
-Servo servo2;
-Servo servo3;
-Servo servo4;
-Servo servo5;
+// Servo mapping:
+// Servo 1 - pin 8
+// Servo 2 - pin 5 (Careful)
+// Servo 3 - pin 10
+// Servo 4 - pin 9
+// Servo 5 (Gripper) - pin 4
 
-char currentCommand   ='\0'; //Luu tru lenh hien tai
-bool commandReceived  = false ; // kien soat khi nhan lenh moi ( dang ko co lenh nao)
-
-void setup(){
-  servo1.attach(2);
-  servo2.attach(3);
-  servo3.attach(4);
-  servo4.attach(5);
-  servo5.attach(6);
-
-  // Khoi tao vi tri ban dau
-  servo1.write(38);
-  servo2.write(150);
-  servo3.write(180);
-  servo4.write(60);
-  servo5.write(-90);  // Open grips
-
-  Serial.begin(115200);
-  
-  
+Servo Servo1;
+Servo Servo2;
+Servo Servo3;
+Servo Servo4;
+Servo Servo5;
+bool start, end;
+void setup() {
+  Servo1.attach(8);
+  Servo2.attach(5);
+  Servo3.attach(10);
+  Servo4.attach(11);
+  Servo5.attach(4);
+  start = true;
+  end = false;
+  // Vị trí ban đầu
+  Servo1.write(0);
+  Servo2.write(60);
+  Servo3.write(110);
+  Servo4.write(140);
+  Servo5.write(0);
 }
-void DelayServo( Servo &servo , int startAngle, int endAngle){      // Chia nho cac goc de servo chay muot
-  if(startAngle > endAngle){
-    for(int i=startAngle ; i >= endAngle ; i--){
+
+// Hàm di chuyển mượt
+void DelayServo(Servo &servo, int startAngle, int endAngle) {
+  if (startAngle > endAngle) {
+    for (int i = startAngle; i >= endAngle; i--) {
       servo.write(i);
-      delay(14);    // Moi goc chay trong 0.03s
+      delay(14); // mỗi bước ~14ms
     }
-  }else {
-    for(int i=startAngle ; i <= endAngle ; i++){
+  } else {
+    for (int i = startAngle; i <= endAngle; i++) {
       servo.write(i);
       delay(14);
     }
   }
- }
-
-void grips () {     // Gap vat the
-  
-  
-  DelayServo( servo2, 150, 70);
-  DelayServo( servo4 , 60 , 90);
-  delay(100);
-  DelayServo( servo5 , -90 , 90);
-  
 }
 
-void coordinate1() {          // red
-  
-  DelayServo( servo2 , 70 ,145);
-  DelayServo( servo4 , 90,-10);
-  DelayServo( servo1 , 38,88);
-  
-  DelayServo( servo5 , 90 , -90); // tha vat
-  
+// Về vị trí "home" mượt
+void home() {
+  DelayServo(Servo1, Servo1.read(), 0);
+  DelayServo(Servo2, Servo2.read(), 60);
+  DelayServo(Servo3, Servo3.read(), 110);
+  DelayServo(Servo4, Servo4.read(), 150);
+  DelayServo(Servo5, Servo5.read(), 0);
 }
 
-void coordinate2() {          //green
-  
-  DelayServo( servo2 , 70 ,160);
-  DelayServo( servo4 , 90,-10);
-  DelayServo( servo1 ,38,115);
-  
-  DelayServo( servo5 , 90 , -90);
-  
-}
-
-void coordinate3() {          //yellow
-  
-  DelayServo( servo2 , 70 ,150);
-  DelayServo( servo4 , 90,-10);
-  DelayServo( servo1 ,38,144);
-  
-  DelayServo( servo5 , 90 , -90);
- 
-} 
-
-void home() {                   // ve vi tri ban dau muot hon
-  
-  DelayServo( servo1 , servo1.read(),38);
-  DelayServo( servo2 , servo2.read(),150);
-  DelayServo( servo3 , servo3.read(),180);
-  DelayServo(servo4 , servo4.read(),60);
-
-}
-
-
-void grips_coordinate (char coordinate) {
-  grips();
+// Động tác gắp
+void grip() {
+  if (start){
+  Servo4.write(160);
   delay(500);
-
-  if ( coordinate == '1')
-    coordinate1();
-  else if (coordinate =='2')
-    coordinate2();
-  else if (coordinate =='3')
-    coordinate3();
-  delay(100);
-  home();
-  Serial.println("done");
+  start = false;
+  end = true;
+  }
+  if (end){
+  Servo1.write(20);  
+  delay(1000);
+  Servo2.write(35);
+  delay(1000);
+  Servo3.write(35);
+  delay(1000);
+  Servo4.write(70);
+  delay(1000);
+  Servo5.write(80);
+  delay(1000);
+  Servo4.write(120);
+  delay(1000);
+  }
+}
+void coordinate1() {          // red
+  DelayServo( Servo2 , Servo2.read(),90);
+  DelayServo( Servo1 , Servo1.read(),65);
+  
+  DelayServo( Servo4 , Servo4.read(),15);
+  
+  DelayServo( Servo5 , Servo5.read(),0); // tha vat
+  
 }
 
+void coordinate2() {          //Blue
+  DelayServo( Servo2 , Servo2.read(),90);
+  DelayServo( Servo1 , Servo1.read(),90);
+  
+  DelayServo( Servo4 , Servo4.read(),15);
+  
+  DelayServo( Servo5 , Servo5.read(),0); // tha vat
+  
+}
 
+void coordinate3() {          //Blue
+  DelayServo( Servo2 , Servo2.read(),90);
+  DelayServo( Servo1 , Servo1.read(),120);
+  
+  DelayServo( Servo4 , Servo4.read(),15);
+  
+  DelayServo( Servo5 , Servo5.read(),0); // tha vat
+  
+}
 
-void loop ()  {
-  // Đọc dữ liệu khi chưa có lệnh nào đang xử lý
-  if( Serial.available() > 0 && !commandReceived) {
-    currentCommand = Serial.read();
+// void grips_coordinate (char coordinate) {
+//   grips();
+//   delay(500);
 
-    if(currentCommand >= '1' && currentCommand <='3')  {
-      commandReceived = true ;                 // Đánh dấu là có lệnh hợp lệ mới             
-    }
-  }
-  if(commandReceived) {
-    grips_coordinate(currentCommand);   // Thực hiện di chuyển
-    commandReceived = false ;           // Đặt lại để chờ lệnh tiếp theo
-    currentCommand='\0';                // Đặt lại lệnh sau khi hoàn thành
-     
-     // Xóa Serial buffer
-     while (Serial.available() > 0) {
-      Serial.read();  // Đọc và bỏ qua mọi dữ liệu còn lại trong buffer
-    }
-  }
+//   if ( coordinate == '1')
+//     coordinate1();
+//   else if (coordinate =='2')
+//     coordinate2();
+//   else if (coordinate =='3')
+//     coordinate3();
+//   delay(100);
+//   home();
+//   Serial.println("done");
+// }
+
+void loop() {
+  grip();
+  Servo4.write(160);
+  delay(2000);
+  coordinate1();
+  delay(1000);
+  Servo4.write(160);
+  delay(2000);
+  home();
 }
