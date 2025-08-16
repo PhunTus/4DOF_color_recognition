@@ -1,40 +1,35 @@
 #include <Servo.h>
 
-// Servo mapping:
-// Servo 1 - pin 8
-// Servo 2 - pin 5 (Careful)
-// Servo 3 - pin 10
-// Servo 4 - pin 9
-// Servo 5 (Gripper) - pin 4
+// Servo mapping
+Servo Servo1;  // pin 8
+Servo Servo2;  // pin 5
+Servo Servo3;  // pin 10
+Servo Servo4;  // pin 11
+Servo Servo5;  // pin 4
 
-Servo Servo1;
-Servo Servo2;
-Servo Servo3;
-Servo Servo4;
-Servo Servo5;
-bool start, end;
 void setup() {
   Servo1.attach(8);
   Servo2.attach(5);
   Servo3.attach(10);
   Servo4.attach(11);
   Servo5.attach(4);
-  start = true;
-  end = false;
+
   // Vị trí ban đầu
   Servo1.write(0);
   Servo2.write(60);
   Servo3.write(110);
   Servo4.write(140);
   Servo5.write(0);
+
+  Serial.begin(115200);
 }
 
-// Hàm di chuyển mượt
+// Di chuyển mượt
 void DelayServo(Servo &servo, int startAngle, int endAngle) {
   if (startAngle > endAngle) {
     for (int i = startAngle; i >= endAngle; i--) {
       servo.write(i);
-      delay(14); // mỗi bước ~14ms
+      delay(14);
     }
   } else {
     for (int i = startAngle; i <= endAngle; i++) {
@@ -44,7 +39,7 @@ void DelayServo(Servo &servo, int startAngle, int endAngle) {
   }
 }
 
-// Về vị trí "home" mượt
+// Về home
 void home() {
   DelayServo(Servo1, Servo1.read(), 0);
   DelayServo(Servo2, Servo2.read(), 60);
@@ -53,15 +48,11 @@ void home() {
   DelayServo(Servo5, Servo5.read(), 0);
 }
 
-// Động tác gắp
+// Gắp vật (chính là code bạn viết trong grip cũ)
 void grip() {
-  if (start){
   Servo4.write(160);
   delay(500);
-  start = false;
-  end = true;
-  }
-  if (end){
+
   Servo1.write(20);  
   delay(1000);
   Servo2.write(35);
@@ -70,64 +61,53 @@ void grip() {
   delay(1000);
   Servo4.write(70);
   delay(1000);
-  Servo5.write(80);
+  Servo5.write(80);   // kẹp lại
   delay(1000);
   Servo4.write(120);
   delay(1000);
-  }
-}
-void coordinate1() {          // red
-  DelayServo( Servo2 , Servo2.read(),90);
-  DelayServo( Servo1 , Servo1.read(),65);
-  
-  DelayServo( Servo4 , Servo4.read(),15);
-  
-  DelayServo( Servo5 , Servo5.read(),0); // tha vat
-  
 }
 
-void coordinate2() {          //Blue
-  DelayServo( Servo2 , Servo2.read(),90);
-  DelayServo( Servo1 , Servo1.read(),90);
-  
-  DelayServo( Servo4 , Servo4.read(),15);
-  
-  DelayServo( Servo5 , Servo5.read(),0); // tha vat
-  
+// Các tọa độ thả
+void coordinate1() {   // red
+  DelayServo(Servo2, Servo2.read(), 90);
+  DelayServo(Servo1, Servo1.read(), 65);
+  DelayServo(Servo4, Servo4.read(), 15);
+  DelayServo(Servo5, Servo5.read(), 0); // mở kẹp
 }
 
-void coordinate3() {          //Blue
-  DelayServo( Servo2 , Servo2.read(),90);
-  DelayServo( Servo1 , Servo1.read(),120);
-  
-  DelayServo( Servo4 , Servo4.read(),15);
-  
-  DelayServo( Servo5 , Servo5.read(),0); // tha vat
-  
+void coordinate2() {   // green
+  DelayServo(Servo2, Servo2.read(), 90);
+  DelayServo(Servo1, Servo1.read(), 90);
+  DelayServo(Servo4, Servo4.read(), 15);
+  DelayServo(Servo5, Servo5.read(), 0);
 }
 
-// void grips_coordinate (char coordinate) {
-//   grips();
-//   delay(500);
+void coordinate3() {   // blue
+  DelayServo(Servo2, Servo2.read(), 90);
+  DelayServo(Servo1, Servo1.read(), 120);
+  DelayServo(Servo4, Servo4.read(), 15);
+  DelayServo(Servo5, Servo5.read(), 0);
+}
 
-//   if ( coordinate == '1')
-//     coordinate1();
-//   else if (coordinate =='2')
-//     coordinate2();
-//   else if (coordinate =='3')
-//     coordinate3();
-//   delay(100);
-//   home();
-//   Serial.println("done");
-// }
+// Thực hiện trọn chu trình gắp + đưa đến vị trí
+void grips_coordinate(char command) {
+  grip();
+  delay(500);
+
+  if (command == '1') coordinate1();
+  else if (command == '2') coordinate2();
+  else if (command == '3') coordinate3();
+
+  delay(500);
+  home();
+  Serial.println("done");  // báo về Python
+}
 
 void loop() {
-  grip();
-  Servo4.write(160);
-  delay(2000);
-  coordinate1();
-  delay(1000);
-  Servo4.write(160);
-  delay(2000);
-  home();
+  if (Serial.available() > 0) {
+    char cmd = Serial.read();
+    if (cmd == '1' || cmd == '2' || cmd == '3') {
+      grips_coordinate(cmd);
+    }
+  }
 }
