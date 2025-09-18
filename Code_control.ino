@@ -7,6 +7,8 @@ Servo Servo3;  // pin 4
 Servo Servo4;  // pin 2 
 Servo Servo5;  // pin 6 Gripper
 
+String inputString = "";
+
 void setup() {
   Servo1.attach(7);
   Servo2.attach(5);
@@ -21,7 +23,7 @@ void setup() {
   Servo4.write(140);
   Servo5.write(0);
 
-  Serial.begin(115200);
+  Serial.begin(9600);   // ⚠ khớp baudrate với Python (9600)
 }
 
 // Di chuyển mượt
@@ -66,24 +68,54 @@ void grip() {
   delay(1000);
 }
 
-// Di chuyển đến tọa độ 1
-void coordinate1() {   // red
+// Vị trí thả theo màu/hình
+void coordinateBlue() {
   DelayServo(Servo2, Servo2.read(), 90);
   DelayServo(Servo1, Servo1.read(), 65);
   DelayServo(Servo4, Servo4.read(), 15);
-  DelayServo(Servo5, Servo5.read(), 0); // mở kẹp
+  DelayServo(Servo5, Servo5.read(), 0);
+}
+
+void coordinateRed() {
+  DelayServo(Servo2, Servo2.read(), 100);
+  DelayServo(Servo1, Servo1.read(), 80);
+  DelayServo(Servo4, Servo4.read(), 20);
+  DelayServo(Servo5, Servo5.read(), 0);
+}
+
+void coordinateYellow() {
+  DelayServo(Servo2, Servo2.read(), 120);
+  DelayServo(Servo1, Servo1.read(), 100);
+  DelayServo(Servo4, Servo4.read(), 25);
+  DelayServo(Servo5, Servo5.read(), 0);
 }
 
 void loop() {
-  // Về home
-  home();
-  delay(500);
+  if (Serial.available()) {
+    inputString = Serial.readStringUntil('\n'); // đọc chuỗi Python gửi
+    inputString.trim(); // bỏ khoảng trắng
 
-  // Thực hiện grip
-  grip();
-  delay(500);
+    if (inputString.length() > 0) {
+      Serial.println("Đã nhận: " + inputString);
 
-  // Di chuyển đến coordinate1
-  coordinate1();
-  delay(1000); // giữ 1 giây trước khi quay về home lần nữa
+      home();
+      delay(500);
+      grip();
+      delay(500);
+
+      // Xử lý theo nhãn
+      if (inputString.startsWith("Blue")) {
+        coordinateBlue();
+      } else if (inputString.startsWith("Red")) {
+        coordinateRed();
+      } else if (inputString.startsWith("Yellow")) {
+        coordinateYellow();
+      }
+
+      delay(1000);
+      home();
+
+      Serial.println("done"); // báo cho Python biết đã xong
+    }
+  }
 }
