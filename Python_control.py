@@ -3,34 +3,33 @@ import serial
 import time
 from ultralytics import YOLO
 
-# ===== Kết nối với Arduino =====
-arduino = serial.Serial(port='COM7', baudrate=115200, timeout=1)
+arduino = serial.Serial(port='COM3', baudrate=9600, timeout=.1)
 time.sleep(2)
-
-# ===== Load model YOLO (thay 'best.pt' bằng model bạn train) =====
-model = YOLO("color.pt")
-
-# ===== Biến cờ để ngắt khi Arduino đang xử lý =====
+model = YOLO('Prediction_code.pt')
 processing_flag = False
-
-# ===== Mapping tên nhãn -> số để gửi cho Arduino =====
 mapping = {
-    "red": "1",
-    "green": "2",
-    "blue": "3"
+    "0": "Blue Circle",
+    "1": "Blue Cylinder",
+    "2": "Blue Square",
+    "3": "Red Circle",
+    "4": "Red Cylinder",
+    "5": "Red Square",
+    "6": "Yellow Circle",
+    "7": "Yellow Cylinder",
+    "8": "Yellow Square"
 }
 
-def send_label(label):
-    """Gửi số (theo mapping) qua Serial cho Arduino"""
-    global processing_flag
-    if label in mapping:
-        data = mapping[label]
-        arduino.write(data.encode())
-        print(f"Gửi nhãn: {label} -> {data}")
-        processing_flag = True
 
-# ===== Camera =====
-cap = cv2.VideoCapture(1)
+def send_label_to_arduino(label):
+    global processing_flag
+    if label in mapping and not processing_flag:
+        arduino.write(mapping[label].encode())
+        print(f"Sent to Arduino: {mapping[label]}")
+        processing_flag = True
+        time.sleep(2)
+        processing_flag = False
+
+cap = cv2.VideoCapture(0)
 
 while True:
     ret, frame = cap.read()
@@ -38,41 +37,29 @@ while True:
         break
 
     if not processing_flag:
-        # Nhận diện bằng YOLO
-        results = model(frame, stream=True)
+        results = model(frame)[0]
+        for result in results.boxes.data.tolist():
+            x1, y1, x2, y2, score, class_id = result
+            if score > 0.5:
+                label = str(int(class_id))
+                send_label_to_arduino(label)  # Send only once
+                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                cv2.putText(frame, f"{mapping[label]} {score:.2f}", (int(x1), int(y1)-10), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                break
 
-        for r in results:
-            for box in r.boxes:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-                conf = float(box.conf[0])
-                cls = int(box.cls[0])
-                label = model.names[cls]
-
-                if conf > 0.2:  # ngưỡng tin cậy
-                    # Vẽ bounding box
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-                    # Gửi số thay vì nhãn chữ
-                    send_label(label)
-                    break   # chỉ gửi 1 đối tượng tại 1 thời điểm
-
-    # ===== Kiểm tra phản hồi từ Arduino =====
+    # Check Arduino response within the main loop
     if arduino.in_waiting > 0:
-        response = arduino.readline().decode().strip()
-        if response == "done":
+        arduino_data = arduino.readline().decode('utf-8').rstrip()
+        if arduino_data == "done":
             processing_flag = False
-            print("Arduino trả về: 'done' - Sẵn sàng nhận nhãn mới.")
+            print("Arduino is ready for next input")
 
-    # ===== Hiển thị video =====
-    cv2.imshow("YOLO Detection", frame)
+    cv2.imshow('YOLOv8 Detection', frame)
 
-    # Thoát bằng phím 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# ===== Giải phóng tài nguyên =====
 cap.release()
 cv2.destroyAllWindows()
-arduino.close()
+arduino.close()#layer 
