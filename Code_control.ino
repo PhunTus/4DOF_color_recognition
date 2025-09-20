@@ -5,7 +5,7 @@ Servo Servo1;  // pin 7
 Servo Servo2;  // pin 5
 Servo Servo3;  // pin 4
 Servo Servo4;  // pin 2 
-Servo Servo5;  // pin 6 Gripper
+Servo Servo5;  // pin 3 Gripper
 
 String inputString = "";
 
@@ -14,7 +14,7 @@ void setup() {
   Servo2.attach(5);
   Servo3.attach(4);
   Servo4.attach(2);
-  Servo5.attach(6);
+  Servo5.attach(3);
 
   // Vị trí ban đầu
   Servo1.write(0);
@@ -23,7 +23,7 @@ void setup() {
   Servo4.write(140);
   Servo5.write(0);
 
-  Serial.begin(9600);   // ⚠ khớp baudrate với Python (9600)
+  Serial.begin(115200);   // ⚠ khớp baudrate với Python (9600)
 }
 
 // Di chuyển mượt
@@ -60,12 +60,12 @@ void grip() {
   delay(1000);
   Servo3.write(35);
   delay(1000);
-  Servo4.write(70);
+  Servo4.write(90);
   delay(1000);
-  Servo5.write(80);   // kẹp
+  Servo5.write(40);   // kẹp
   delay(1000);
-  Servo4.write(120);
-  delay(1000);
+  // Servo4.write(120);
+  // delay(1000);
 }
 
 // Vị trí thả theo màu/hình
@@ -111,10 +111,11 @@ void loop() {
       } else if (inputString.startsWith("Yellow")) {
         coordinateYellow();
       }
-
-      delay(1000);
+      delay(400);
+      Servo4.write(120);
+      delay(400);
       home();
-
+      //delay(400);
       Serial.println("done"); // báo cho Python biết đã xong
     }
   }
